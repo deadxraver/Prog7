@@ -1,0 +1,70 @@
+├───clientlogic
+│       ClientMain.java
+│       Program.java
+│
+├───commands
+│   │   Add.java
+│   │   AddIfMax.java
+│   │   Clear.java
+│   │   Command.java
+│   │   Explainable.java
+│   │   Help.java
+│   │   Info.java
+│   │   MaxByMpaaRating.java
+│   │   PrintFieldAscendingOperator.java
+│   │   RemoveAllByOscarsCount.java
+│   │   RemoveById.java
+│   │   RemoveHead.java
+│   │   RemoveLower.java
+│   │   Show.java
+│   │   Update.java
+│   │
+│   └───servercommands
+│           Exit.java
+│           Grant.java
+│           Help.java
+│           ServerCommand.java
+│
+├───databasepack
+├───datapacks
+│       RequestPackage.java
+│       ResponsePackage.java
+│
+├───elements
+│       Color.java
+│       Coordinates.java
+│       Country.java
+│       Movie.java
+│       MovieCollection.java
+│       MovieGenre.java
+│       MpaaRating.java
+│       Person.java
+│
+├───exceptions
+│       DateIsNotReachedException.java
+│       EmptyStringException.java
+│       IncorrectInputException.java
+│       NoSuchColorException.java
+│       NoSuchCountryException.java
+│       NoSuchMovieException.java
+│       NullFieldException.java
+│       NumberOutOfBoundsException.java
+│       ValidationException.java
+│       WrongNumberOfArgumentsException.java
+│
+├───parsers
+│       ColorParser.java
+│       CountryParser.java
+│       DateTimeParser.java
+│       DoubleParser.java
+│       FloatParser.java
+│       GenreParser.java
+│       IntParser.java
+│       LongParser.java
+│       MovieParser.java
+│       MpaaRatingParser.java
+│       StringParser.java
+│
+└───serverlogic
+        Program.java
+        ServerMain.java
