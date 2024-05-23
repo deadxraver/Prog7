@@ -7,7 +7,6 @@
 │   │   AddIfMax.java
 │   │   Clear.java
 │   │   Command.java
-│   │   Explainable.java
 │   │   Help.java
 │   │   Info.java
 │   │   MaxByMpaaRating.java
@@ -19,6 +18,12 @@
 │   │   Show.java
 │   │   Update.java
 │   │
+│   ├───localcommands
+│   │       ExecuteScript.java
+│   │       Exit.java
+│   │       LocalCommand.java
+│   │       MovieGenerator.java
+│   │
 │   └───servercommands
 │           Exit.java
 │           Grant.java
@@ -26,7 +31,10 @@
 │           ServerCommand.java
 │
 ├───databasepack
+│       User.java
+│
 ├───datapacks
+│       AuthorizationPackage.java
 │       RequestPackage.java
 │       ResponsePackage.java
 │
@@ -41,14 +49,20 @@
 │       Person.java
 │
 ├───exceptions
+│       AuthorizationException.java
 │       DateIsNotReachedException.java
+│       EmptyCollectionException.java
 │       EmptyStringException.java
 │       IncorrectInputException.java
 │       NoSuchColorException.java
+│       NoSuchCommandException.java
 │       NoSuchCountryException.java
+│       NoSuchGenreException.java
 │       NoSuchMovieException.java
+│       NoSuchMpaaRating.java
 │       NullFieldException.java
 │       NumberOutOfBoundsException.java
+│       ParseException.java
 │       ValidationException.java
 │       WrongNumberOfArgumentsException.java
 │
