@@ -1,5 +1,6 @@
-package commands;
+package commands.movie;
 
+import elements.User;
 import datapacks.ResponsePackage;
 import elements.Movie;
 import elements.MovieCollection;
@@ -8,23 +9,25 @@ import exceptions.EmptyCollectionException;
 import java.io.Serial;
 import java.io.Serializable;
 
-public class AddIfMax implements Command, Serializable {
+public class AddIfMax implements ComesWithAMovie, Serializable {
 
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object object) {
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object object) {
         try {
             if (((Movie)object).getCoordinates().getLength() >
                     movieCollection.getMax().getCoordinates().getLength()) {
                 movieCollection.addMovie((Movie) object);
                 return new ResponsePackage(
                         false,
-                        "Movie successfully added"
+                        "Movie successfully added",
+                        null
                 );
             }
         } catch (EmptyCollectionException ignored) {}
         return new ResponsePackage(
                 true,
-                "Movie is not max"
+                "Movie is not max",
+                null
         );
     }
 
@@ -40,4 +43,9 @@ public class AddIfMax implements Command, Serializable {
 
     @Serial
     private static final long serialVersionUID = 2874280002097979299L;
+
+    @Override
+    public ResponsePackage addAMovie(MovieCollection movieCollection, User user, Movie movie) {
+        return run(movieCollection, user, movie);
+    }
 }

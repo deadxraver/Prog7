@@ -1,23 +1,26 @@
-package commands;
+package commands.nomovie;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
+import elements.User;
 
 import java.io.Serial;
 import java.io.Serializable;
 
-public class RemoveAllByOscarsCount implements Command, Serializable {
+public class RemoveAllByOscarsCount implements NoMovieCommand, Serializable {
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object object) {
-        if (movieCollection.removeByOscar((Integer) object)) {
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object object) {
+        if (movieCollection.removeByOscar((Integer) object, user)) {
             return new ResponsePackage(
                     false,
-                    "Movies with such oscars count have been successfully deleted"
+                    "Movies with such oscars count have been successfully deleted",
+                    null
             );
         } else {
             return new ResponsePackage(
                     true,
-                    "No matches found"
+                    "No matches found",
+                    null
             );
         }
     }

@@ -1,26 +1,30 @@
-package commands;
+package commands.nomovie;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
+import elements.User;
+import exceptions.AccessException;
 import exceptions.NoSuchMovieException;
 
 import java.io.Serial;
 import java.io.Serializable;
 
-public class RemoveById implements Command, Serializable {
+public class RemoveById implements NoMovieCommand, Serializable {
 
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object object) {
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object object) {
         try {
-            movieCollection.removeMovie((Long) object);
+            movieCollection.removeMovie((Long) object, user);
             return new ResponsePackage(
                     false,
+                    "Movie successfully deleted",
                     null
             );
-        } catch (NoSuchMovieException e) {
+        } catch (NoSuchMovieException | AccessException e) {
             return new ResponsePackage(
                     true,
-                    e.getMessage()
+                    e.getMessage(),
+                    null
             );
         }
     }

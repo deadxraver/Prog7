@@ -8,10 +8,11 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.h2database:h2:2.2.220'
-    implementation 'org.postgresql:postgresql:42.7.3'
-    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation 'com.h2database:h2:2.2.220'
+    implementation 'ch.qos.logback:logback-classic:1.4.12'
+    implementation 'org.postgresql:postgresql:42.7.3'
 }
 
 tasks.register('serverJar', Jar) {
@@ -32,8 +33,4 @@ tasks.register('clientJar', Jar) {
     archiveBaseName = 'client'
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
-}
-
-test {
-    useJUnitPlatform()
 }

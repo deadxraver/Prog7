@@ -1,5 +1,6 @@
 package elements;
 
+import exceptions.AccessException;
 import exceptions.EmptyCollectionException;
 import exceptions.NoSuchMovieException;
 
@@ -7,16 +8,17 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MovieCollection {
     public MovieCollection(LocalDate creationDate, Movie... movies) {
         this.creationDate = creationDate;
-        collection = new LinkedList<>();
+        collection = new CopyOnWriteArrayList<>();
         collection.addAll(Arrays.asList(movies));
     }
 
     private final LocalDate creationDate;
-    private final LinkedList<Movie> collection;
+    private final CopyOnWriteArrayList<Movie> collection;
 
     public Movie getElement(long id) throws NoSuchMovieException {
         for (Movie movie : collection) {
@@ -27,6 +29,17 @@ public class MovieCollection {
     public int getNumberOfMovies() {
         return collection.size();
     }
+    public int getNumberOfMovies(User user) {
+        if (user == null) return collection.size();
+        int n = 0;
+        for (Movie movie : collection) {
+            if (movie.belongsTo(user)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
     public LocalDate getCreationDate() {
         return this.creationDate;
     }
@@ -45,28 +58,33 @@ public class MovieCollection {
         collection.add(movie);
     }
 
-    public void removeMovie(long id) throws NoSuchMovieException {
+    public void removeMovie(long id, User user) throws NoSuchMovieException, AccessException {
         for (Movie movie : collection) {
             if (movie.getId() == id) {
-                collection.remove(movie);
+                if (movie.belongsTo(user)) collection.remove(movie);
+                else throw new AccessException();
                 return;
             }
         }
         throw new NoSuchMovieException();
     }
 
-    public void removeMovie(Movie movie) {
-        collection.remove(movie);
+    public void removeMovie(Movie movie, User user) throws AccessException {
+        if (movie.belongsTo(user)) collection.remove(movie);
+        else throw new AccessException();
     }
 
     public void clear() {
-        for (Movie movie : collection) {
-            collection.remove(movie);
-        }
+        collection.clear(); // todo truncate
     }
 
-    public void clear(int userId) {
-        // TODO
+    public void clear(User user) {
+        if (user == null) {
+            clear();
+        }
+        else {
+            collection.removeIf(movie -> movie.belongsTo(user));
+        }
     }
 
     private long generateId() {
@@ -82,11 +100,11 @@ public class MovieCollection {
         }
     }
 
-    public Movie getMax() throws EmptyCollectionException {
+    public Movie getMax(User user) throws EmptyCollectionException {
         long id = 0;
         Movie maxMovie = null;
         for (Movie movie : collection) {
-            if (movie.getId() > id) {
+            if (movie.getId() > id && movie.belongsTo(user)) {
                 maxMovie = movie;
                 id = movie.getId();
             }
@@ -95,11 +113,15 @@ public class MovieCollection {
         return maxMovie;
     }
 
-    public boolean removeLower(Movie movie) {
+    public Movie getMax() throws EmptyCollectionException {
+        return getMax(null);
+    }
+
+    public boolean removeLower(Movie movie, User user) {
         boolean foundLower = false;
         for (Movie movie1 : collection) {
             if (movie.getCoordinates().getLength() >
-            movie1.getCoordinates().getLength()) {
+            movie1.getCoordinates().getLength() && movie1.belongsTo(user)) {
                 collection.remove(movie1);
                 foundLower = true;
             }
@@ -107,10 +129,10 @@ public class MovieCollection {
         return foundLower;
     }
 
-    public boolean removeByOscar(int number) {
+    public boolean removeByOscar(int number, User user) {
         boolean found = false;
         for (Movie movie : collection) {
-            if (movie.getOscarsCount() == number) {
+            if (movie.getOscarsCount() == number && movie.belongsTo(user)) {
                 collection.remove(movie);
                 found = true;
             }

@@ -1,5 +1,6 @@
-package commands;
+package commands.movie;
 
+import elements.User;
 import datapacks.ResponsePackage;
 import elements.Movie;
 import elements.MovieCollection;
@@ -7,14 +8,14 @@ import elements.MovieCollection;
 import java.io.Serial;
 import java.io.Serializable;
 
-public class Add implements Command, Serializable {
+public class Add implements ComesWithAMovie, Serializable {
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object object) {
-
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object object) {
         movieCollection.addMovie((Movie) object);
         return new ResponsePackage(
                 false,
-                "Movie successfully added"
+                "Movie successfully added",
+                null
         );
     }
 
@@ -30,4 +31,9 @@ public class Add implements Command, Serializable {
 
     @Serial
     private static final long serialVersionUID = -9203005047180764168L;
+
+    @Override
+    public ResponsePackage addAMovie(MovieCollection movieCollection, User user, Movie movie) {
+        return run(movieCollection, user, movie);
+    }
 }

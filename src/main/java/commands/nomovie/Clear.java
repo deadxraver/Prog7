@@ -1,27 +1,21 @@
-package commands;
+package commands.nomovie;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
+import elements.User;
 
 import java.io.Serial;
 import java.io.Serializable;
 
 
-public class Clear implements Command, Serializable {
+public class Clear implements NoMovieCommand, Serializable {
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object arg) {
-        if (arg == null) {
-            movieCollection.clear();
-            return new ResponsePackage(
-                    false,
-                    "Collection successfully cleared"
-            );
-        }
-        int userId = (Integer) arg;
-        movieCollection.clear(userId);
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object arg) {
+        movieCollection.clear(user);
         return new ResponsePackage(
                 false,
-                "Collection for user " + userId + " successfully cleared"
+                (user != null ? ("Collection for user " + user) : "Collection for all users") + " successfully cleared",
+                null
         );
     }
 

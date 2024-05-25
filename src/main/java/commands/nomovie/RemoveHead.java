@@ -1,28 +1,31 @@
-package commands;
+package commands.nomovie;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
+import elements.User;
+import exceptions.AccessException;
 import exceptions.EmptyCollectionException;
 import exceptions.NoSuchMovieException;
 
 import java.io.Serial;
 import java.io.Serializable;
 
-public class RemoveHead implements Command, Serializable {
+public class RemoveHead implements NoMovieCommand, Serializable {
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object object) { // todo change logic
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object object) { // todo change logic
         try {
-            movieCollection.removeMovie(movieCollection.getMax().getId());
-        } catch (EmptyCollectionException e) {
+            movieCollection.removeMovie(movieCollection.getMax(), user);
+        } catch (EmptyCollectionException | AccessException e) {
             return new ResponsePackage(
                     true,
-                    e.getMessage()
+                    e.getMessage(),
+                    null
             );
-        } catch (NoSuchMovieException ignored) {
         }
         return new ResponsePackage(
                 false,
-                "Movie successfully deleted"
+                "Movie successfully deleted",
+                null
         );
     }
 

@@ -2,15 +2,17 @@ package commands.servercommands;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
+import elements.User;
 
-public class Grant implements ServerCommand, Explainable {
+public class Grant implements ServerCommand {
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object arg) {
-        String username = (String) arg;
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object arg) {
+
         // TODO grant or take superuser
         return new ResponsePackage(
                 false,
-                null // todo specify granted or revoked
+                null, // todo specify granted or revoked
+                null
         );
     }
 

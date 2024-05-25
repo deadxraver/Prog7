@@ -1,6 +1,6 @@
 package exceptions;
 
-public class NoSuchMpaaRating extends ParseException {
+public class NoSuchMpaaRatingException extends ParseException {
     @Override
     public String getMessage() {
         return "No such MPAA rating";

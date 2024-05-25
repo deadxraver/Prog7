@@ -1,17 +1,19 @@
-package commands;
+package commands.nomovie;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
+import elements.User;
 
 import java.io.Serial;
 import java.io.Serializable;
 
-public class Show implements Command, Serializable {
+public class Show implements NoMovieCommand, Serializable {
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object object) {
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object object) {
         return new ResponsePackage(
                 false,
-                movieCollection.toString()
+                movieCollection.toString(),
+                null
         );
     }
 

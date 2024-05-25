@@ -1,7 +1,5 @@
 package elements;
 
-import databasepack.User;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -29,7 +27,7 @@ import java.util.Objects;
  */
 public class Movie implements Comparable<Movie>, Serializable {
     public Movie(long id, String name, Coordinates coordinates, LocalDate creationDate,
-                 int oscarsCount, MovieGenre genre, MpaaRating mpaaRating, Person operator) {
+                 int oscarsCount, MovieGenre genre, MpaaRating mpaaRating, Person operator, User owner) {
         this.id = id;
         this.name = name;
         this.coordinates = coordinates;
@@ -38,6 +36,7 @@ public class Movie implements Comparable<Movie>, Serializable {
         this.genre = genre;
         this.mpaaRating = mpaaRating;
         this.operator = operator;
+        this.owner = owner;
     }
 
     private long id; //Значение поля должно быть больше 0, Значение этого поля должно быть уникальным, Значение этого поля должно генерироваться автоматически
@@ -112,6 +111,14 @@ public class Movie implements Comparable<Movie>, Serializable {
 
     public void setOperator(Person operator) {
         this.operator = operator;
+    }
+
+    public User getOwner() {
+        return this.owner;
+    }
+
+    public boolean belongsTo(User user) {
+        return user == null || this.owner.equals(user);
     }
 
     @Override

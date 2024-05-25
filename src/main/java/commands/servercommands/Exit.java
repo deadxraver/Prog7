@@ -2,10 +2,11 @@ package commands.servercommands;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
+import elements.User;
 
-public class Exit implements ServerCommand, Explainable {
+public class Exit implements ServerCommand {
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object arg) {
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object arg) {
         System.exit(0);
         return null;
     }

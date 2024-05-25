@@ -1,24 +1,27 @@
-package commands;
+package commands.nomovie;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
+import elements.User;
 import exceptions.EmptyCollectionException;
 
 import java.io.Serial;
 import java.io.Serializable;
 
-public class MaxByMpaaRating implements Command, Serializable {
+public class MaxByMpaaRating implements NoMovieCommand, Serializable {
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object object) {
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object object) {
         try {
             return new ResponsePackage(
                     false,
-                    movieCollection.getMpaaMax().toString()
+                    movieCollection.getMpaaMax().toString(),
+                    null
             );
         } catch (EmptyCollectionException e) {
             return new ResponsePackage(
                     true,
-                    e.getMessage()
+                    e.getMessage(),
+                    null
             );
         }
     }

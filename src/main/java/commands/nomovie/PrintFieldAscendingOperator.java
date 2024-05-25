@@ -1,17 +1,18 @@
-package commands;
+package commands.nomovie;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
 import elements.Person;
+import elements.User;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 
-public class PrintFieldAscendingOperator implements Command, Serializable {
+public class PrintFieldAscendingOperator implements NoMovieCommand, Serializable {
 
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object object) {
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object object) {
         StringBuilder builder = new StringBuilder();
         Object[] objects = movieCollection.getOperatorList();
         Person[] people = (Person[]) objects;
@@ -21,7 +22,8 @@ public class PrintFieldAscendingOperator implements Command, Serializable {
         }
         return new ResponsePackage(
                 false,
-                builder.toString()
+                builder.toString(),
+                null
         );
     }
 

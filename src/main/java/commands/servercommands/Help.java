@@ -2,6 +2,7 @@ package commands.servercommands;
 
 import datapacks.ResponsePackage;
 import elements.MovieCollection;
+import elements.User;
 
 import java.util.HashMap;
 
@@ -11,12 +12,13 @@ public class Help implements ServerCommand {
     }
     private static HashMap<String, ServerCommand> serverCommandHashMap;
     @Override
-    public ResponsePackage run(MovieCollection movieCollection, Object arg) {
+    public ResponsePackage run(MovieCollection movieCollection, User user, Object arg) {
         StringBuilder sb = new StringBuilder();
         for (ServerCommand sc : serverCommandHashMap.values()) sb.append(sc.explain()).append('\n');
         return new ResponsePackage(
                 false,
-                sb.toString()
+                sb.toString(),
+                null
         );
     }
 

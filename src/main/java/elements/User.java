@@ -1,4 +1,6 @@
-package databasepack;
+package elements;
+
+import java.util.Objects;
 
 public class User {
     public User(
@@ -35,5 +37,25 @@ public class User {
 
     public void setSuperuser(boolean superuser) {
         this.superuser = superuser;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return id == user.id && superuser == user.superuser && Objects.equals(username, user.username) && Objects.equals(password, user.password);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, username, password, superuser);
+    }
+
+    @Override
+    public String toString() {
+        return "user_id=" + id +
+                ", username=" + username +
+                ", is_a_superuser=" + superuser;
     }
 }
