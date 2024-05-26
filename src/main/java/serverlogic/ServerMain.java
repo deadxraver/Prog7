@@ -12,7 +12,7 @@ public class ServerMain {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException ignored) {}
-        ServerProgram.startServer(3);
+//        ServerProgram.startServer();
+        new ServerProgram(1).run();
     }
-
 }

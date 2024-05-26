@@ -1,8 +1,6 @@
 package datapacks;
 
 import commands.Command;
-import commands.Flags;
-
 import java.io.Serial;
 import java.io.Serializable;
 

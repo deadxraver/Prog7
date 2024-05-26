@@ -28,7 +28,7 @@ public class ClientProgram {
     private final int port;
     private final String host;
     private Scanner reader;
-    private final SocketChannel socketChannel;
+    private SocketChannel socketChannel;
     private String username;
     private String password;
     private final HashMap<String, NoMovieCommand> commandHashMap = new HashMap<>();
@@ -56,7 +56,6 @@ public class ClientProgram {
         ResourceBundle resourceBundle = ResourceBundle.getBundle("connection_details_en");
         this.port = Integer.parseInt(resourceBundle.getString("port"));
         this.host = resourceBundle.getString("host");
-        this.socketChannel = SocketChannel.open();
     }
 
     /**
@@ -69,10 +68,10 @@ public class ClientProgram {
     @MainMethod
     public void run() throws IOException {
         System.out.println("Welcome! Type 'log' if you want to log in, type 'reg' if you have no account yet.");
-//        socketChannel.connect(new InetSocketAddress(this.host, this.port));
-        try (Socket socket = new Socket(host, port)) {
+        socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
+        try (Socket socket = socketChannel.socket()) {
             while (true) {
-                RequestPackage<?> authorizationPackage = this.getAuthorizationPackage();
+                RequestPackage<Boolean> authorizationPackage = this.getAuthorizationPackage();
                 ResponsePackage responsePackage = authorize(authorizationPackage, socket);
                 if (responsePackage.errorsOccurred()) {
                     System.err.println(responsePackage.message());
@@ -81,50 +80,50 @@ public class ClientProgram {
                 System.out.println(responsePackage.message());
                 break;
             }
-
-            fillHashMaps();
-
-            try {
-                while (true) {
-                    if (fileCallsCount >= 100 || !reader.hasNext()) {
-                        reader = new Scanner(System.in);
-                        fileCallsCount = 0;
-                    }
-                    System.out.print("[" + username + "]=# ");
-                    String[] input = reader.nextLine().trim().split(" ");
-                    if (input.length == 0) continue;
-                    if (input[0].equals("exit")) {
-                        if (input.length != 1) {
-                            System.err.println("this command does not take any arguments");
-                            continue;
-                        } else {
-                            System.exit(0);
-                        }
-                    }
-                    if (input[0].equals("execute_script")) {
-                        if (input.length != 2) {
-                            System.err.println("this command takes exactly one argument");
-                        } else {
-                            reader = new Scanner(new FileReader(input[1]));
-                            fileCallsCount++;
-                        }
-                        continue;
-                    }
-                    RequestPackage<?> requestPackage;
-                    try {
-                        requestPackage = processCommand(input);
-                    } catch (WrongNumberOfArgumentsException | NumberFormatException | NullFieldException |
-                             NoSuchCommandException e) {
-                        System.err.println(e.getMessage());
-                        continue;
-                    }
-                    ResponsePackage responsePackage = sendAndGetResponse(socket, requestPackage);
-                    if (responsePackage == null) System.err.println("Failed to get response package");
-                    else if (responsePackage.errorsOccurred()) System.err.println(responsePackage.message());
-                    else System.out.println(responsePackage.message());
-                }
-            } catch (NoSuchElementException ignored) {}
         }
+        socketChannel.close();
+
+        fillHashMaps();
+
+        while (true) {
+            if (fileCallsCount >= 100 || !reader.hasNext()) {
+                reader = new Scanner(System.in);
+                fileCallsCount = 0;
+            }
+            System.out.print("[" + username + "]=# ");
+            String[] input = reader.nextLine().trim().split(" ");
+            if (input.length == 0) continue;
+            if (input[0].equals("exit")) {
+                if (input.length != 1) {
+                    System.err.println("this command does not take any arguments");
+                    continue;
+                } else {
+                    System.exit(0);
+                }
+            }
+            if (input[0].equals("execute_script")) {
+                if (input.length != 2) {
+                    System.err.println("this command takes exactly one argument");
+                } else {
+                    reader = new Scanner(new FileReader(input[1]));
+                    fileCallsCount++;
+                }
+                continue;
+            }
+            RequestPackage<?> requestPackage;
+            socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
+            try (Socket socket = socketChannel.socket()) {
+                requestPackage = processCommand(input);
+                ResponsePackage responsePackage = sendAndGetResponse(socket, requestPackage);
+                if (responsePackage == null) System.err.println("Failed to get response package");
+                else if (responsePackage.errorsOccurred()) System.err.println(responsePackage.message());
+                else System.out.println(responsePackage.message());
+            } catch (WrongNumberOfArgumentsException | NumberFormatException | NullFieldException |
+                     NoSuchCommandException e) {
+                System.err.println(e.getMessage());
+            }
+        }
+
     }
 
     /**

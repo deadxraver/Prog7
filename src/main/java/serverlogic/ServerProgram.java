@@ -21,6 +21,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -66,39 +67,44 @@ public class ServerProgram {
     private final int serverNumber;
     private ServerSocketChannel serverSocketChannel;
     private static final MovieCollection movieCollection = new MovieCollection(LocalDate.now()); // todo с бд подтягивать
-    private static volatile String buffer;
+    private static final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    private SocketChannel socketChannel;
+
 
     @MainMethod
     public static void startServer(int numberOfThreads) throws NumberOutOfBoundsException, WrongNumberOfArgumentsException, SQLException, NullFieldException {
+        if (numberOfThreads < 1 || numberOfThreads > 8) throw new WrongNumberOfArgumentsException();
         for (int i = 0; i < numberOfThreads; i++) {
             ServerProgram serverProgram = new ServerProgram(i);
             TaskHandler.addTask(serverProgram::run);
         }
-        TaskHandler.addTask(ServerProgram::spinLoop);
         TaskHandler.start();
     }
 
     public static void startServer() throws NumberOutOfBoundsException, WrongNumberOfArgumentsException, SQLException, NullFieldException {
-        startServer(3);
+        startServer(1);
     }
 
     public void run() {
         logger.info("Server #{} started in thread {}", serverNumber, Thread.currentThread().getName());
         try {
             establishConnection();
+            logger.info("Connection established, current address is: {}", serverSocketChannel.getLocalAddress());
         } catch (IOException e) {
             logger.error("{}", e.getMessage());
             System.exit(1);
         }
-        try (Socket socket = serverSocketChannel.accept().socket()) {
-            while (true) {
+        while (true) {
+            if (connect()) {
                 try (
-                        ObjectInputStream objectInputStream = (ObjectInputStream) socket.getInputStream();
-                        ObjectOutputStream objectOutputStream = (ObjectOutputStream) socket.getOutputStream()
+                        Socket socket = socketChannel.socket();
+                        ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+                        ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream())
                 ) {
+                    logger.info("Connection accepted, waiting for request...");
                     RequestPackage<?> requestPackage = (RequestPackage<?>) objectInputStream.readObject();
                     logger.info("request received, {}", requestPackage);
-                    if (requestPackage.args().getClass().equals(Boolean.class)) {
+                    if (requestPackage.command() == null) {
                         objectOutputStream.writeObject(new ResponsePackage(
                                 false,
                                 "Cool! You are" + new User(requestPackage.username(), requestPackage.password()),
@@ -109,41 +115,85 @@ public class ServerProgram {
                     } else {
                         // todo
                     }
-                } catch (NullPointerException | IOException | ClassNotFoundException e) {
+                } catch (IOException | ClassNotFoundException e) {
                     logger.error("{}", e.getMessage());
                 }
-
+            } try {
+                if (reader.ready()) {
+                    String inp = reader.readLine().trim();
+                    ServerCommand serverCommand = serverCommandHashMap.get(inp);
+                    if (serverCommand == null) continue;
+                    if (serverCommand.equals(serverCommandHashMap.get("exit")) || serverCommand.equals(serverCommandHashMap.get("help")))
+                        serverCommand.run(
+                                movieCollection,
+                                null,
+                                null
+                        );
+                    else {
+                        serverCommand.run(
+                                movieCollection,
+                                null, // todo (get user from db)
+                                null
+                        );
+                    }
+                }
+            } catch (IOException e) {
+                logger.error("{}", e.getMessage());
             }
-        } catch (IOException e) {
-            logger.error("{}", e.getMessage());
         }
     }
 
-    public static void spinLoop() {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-            ServerCommand serverCommand = null;
-            try {
-                serverCommand = serverCommandHashMap.get(bufferedReader.readLine().trim());
-            } catch (IOException ignored) {
-            }
-            buffer = null;
-            if (serverCommand == null) logger.error("Unknown command");
-            else serverCommand.run(movieCollection, null, null);
+    private boolean connect() {
+        try {
+            if ((socketChannel = serverSocketChannel.accept()) == null) throw new IOException();
+            logger.info("Client connected");
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
+
+    private RequestPackage<?> getRequest(Socket socket) throws IOException {
+        try (ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream())) {
+            return (RequestPackage<?>) objectInputStream.readObject();
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private void sendRequest(Socket socket, ResponsePackage responsePackage) throws IOException {
+        try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream())) {
+            objectOutputStream.writeObject(responsePackage);
+            objectOutputStream.flush();
+        }
+    }
+
+//    public static void spinLoop() {
+//        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+//            ServerCommand serverCommand = null;
+//            try {
+//                serverCommand = serverCommandHashMap.get(bufferedReader.readLine().trim());
+//            } catch (IOException ignored) {
+//            }
+//            buffer = null;
+//            if (serverCommand == null) logger.error("Unknown command");
+//            else serverCommand.run(movieCollection, null, null);
+//    }
 
     private synchronized void establishConnection() throws IOException {
         serverSocketChannel = ServerSocketChannel.open();
-        for (int i = 0; i < 4; i++) {
-            try {
-                if (i == 0) serverSocketChannel.bind(new InetSocketAddress(host, port));
-                else {
-                    serverSocketChannel.bind(new InetSocketAddress(host, Integer.parseInt(connectionDetailsEn.getString("port" + i))));
-                }
-            } catch (Exception e) {
-                continue;
-            }
-            break;
-        }
+//        for (int i = 0; i < 4; i++) {
+//            try {
+//                if (i == 0) serverSocketChannel.bind(new InetSocketAddress(host, port));
+//                else {
+//                    serverSocketChannel.bind(new InetSocketAddress(host, Integer.parseInt(connectionDetailsEn.getString("port" + i))));
+//                }
+//            } catch (Exception e) {
+//                continue;
+//            }
+//            break;
+//        }
+        serverSocketChannel.bind(new InetSocketAddress(1841));
         serverSocketChannel.configureBlocking(false);
     }
 
