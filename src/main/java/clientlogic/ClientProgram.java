@@ -1,294 +1,257 @@
 package clientlogic;
 
-import annotations.MainMethod;
+
 import commands.MovieGenerator;
-import commands.movie.*;
-import commands.nomovie.*;
+import commands.client.*;
+import commands.client.logreg.Disconnect;
+import commands.client.logreg.Login;
+import commands.client.logreg.Register;
 import datapacks.RequestPackage;
 import datapacks.ResponsePackage;
-import exceptions.NoSuchCommandException;
-import exceptions.NullFieldException;
-import exceptions.WrongNumberOfArgumentsException;
-import parsers.LongParser;
+import elements.Movie;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
-import java.util.NoSuchElementException;
-import java.util.ResourceBundle;
-import java.util.Scanner;
-
+import java.util.*;
 
 public class ClientProgram {
-    private final int port;
-    private final String host;
-    private Scanner reader;
-    private SocketChannel socketChannel;
-    private String username;
-    private String password;
-    private final HashMap<String, NoMovieCommand> commandHashMap = new HashMap<>();
-    private final HashMap<String, ComesWithAMovie> movieCommandHashMap = new HashMap<>();
-    private int fileCallsCount = 0;
+	private Scanner reader;
+	private final HashMap<String, ClientCommand> clientCommandHashMap;
+	private SocketChannel socketChannel;
+	private int fileCallsCount = 0;
+	private String username;
+	private String password;
+	private final ResourceBundle resourceBundle;
+	private Socket socket;
 
-    public ClientProgram(String[] args) throws WrongNumberOfArgumentsException, IOException {
-        reader = new Scanner(System.in);
-        ResourceBundle resourceBundle = ResourceBundle.getBundle("connection_details_en");
-        if (args.length == 0) {
-            this.port = Integer.parseInt(resourceBundle.getString("port"));
-            this.host = resourceBundle.getString("host");
-        } else if (args.length == 1) {
-            this.port = Integer.parseInt(args[0]);
-            this.host = resourceBundle.getString("host");
-        } else if (args.length == 2) {
-            this.port = Integer.parseInt(args[1]);
-            this.host = args[0];
-        } else throw new WrongNumberOfArgumentsException();
-        this.socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
-    }
+	public ClientProgram() {
+		reader = new Scanner(System.in);
+		clientCommandHashMap = new HashMap<>();
+		this.resourceBundle = ResourceBundle.getBundle("connection_details_en");
+		fillHashMap();
+		for (int i = 0; true; i++) {
+			try {
+				socketChannel = SocketChannel.open();
+				socketChannel.connect(new InetSocketAddress(resourceBundle.getString("host"), Integer.parseInt(resourceBundle.getString("port"))));
+				break;
+			} catch (IOException e) {
+				System.err.println("Server is unavailable right now, try again later");
+			}
+			if (i == 3) System.exit(1);
+			System.out.println("Retrying in 5 seconds");
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException ignored) {
+			}
+		}
+	}
 
-    public ClientProgram() throws IOException {
-        reader = new Scanner(System.in);
-        ResourceBundle resourceBundle = ResourceBundle.getBundle("connection_details_en");
-        this.port = Integer.parseInt(resourceBundle.getString("port"));
-        this.host = resourceBundle.getString("host");
-    }
+	public void run() {
+		try {
+			socket = socketChannel.socket();
+			login();
 
-    /**
-     * Runs the program, which connects to a server, logs in or registers the user,
-     * and then enters a command loop where the user can input commands to interact
-     * with the server.
-     *
-     * @throws IOException if there is an error connecting to the server
-     */
-    @MainMethod
-    public void run() throws IOException {
-        System.out.println("Welcome! Type 'log' if you want to log in, type 'reg' if you have no account yet.");
-        socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
-        try (Socket socket = socketChannel.socket()) {
-            while (true) {
-                RequestPackage<Boolean> authorizationPackage = this.getAuthorizationPackage();
-                ResponsePackage responsePackage = authorize(authorizationPackage, socket);
-                if (responsePackage.errorsOccurred()) {
-                    System.err.println(responsePackage.message());
-                    continue;
-                }
-                System.out.println(responsePackage.message());
-                break;
-            }
-        }
-        socketChannel.close();
+			while (true) {
+				System.out.print("=# ");
+				if (!reader.hasNext() || fileCallsCount > 100) {
+					reader = new Scanner(System.in);
+					fileCallsCount = 0;
+				}
+				String[] input = reader.nextLine().trim().split(" ");
+				if (input.length == 0) continue;
+				if (checkLocal(input)) continue;
+				ClientCommand clientCommand = clientCommandHashMap.get(input[0]);
+				if (clientCommand == null) {
+					System.err.println("No such command");
+					continue;
+				}
+				RequestPackage requestPackage = generateRequest(input, clientCommand);
+				ResponsePackage responsePackage;
+				try {
+					if (!send(requestPackage)) continue;
+					responsePackage = receive();
+					process(responsePackage);
+				} catch (IOException | ClassNotFoundException e) {
+					System.err.println(e.getMessage());
+					continue;
+				}
+				if (responsePackage.movie() != null) {
+					Movie movie = MovieGenerator.generateMovie(responsePackage.movie(), reader);
+					try (
+							Socket socket = socketChannel.socket()
+							) {
+						if (!send(new RequestPackage(
+								username,
+								password,
+								new Update(null),
+								movie
+						))) {
+							System.err.println("Failed to send");
+							continue;
+						}
+						responsePackage = receive();
+						process(responsePackage);
+					} catch (IOException | ClassNotFoundException e) {
+						System.err.println(e.getMessage());
+					}
+				}
+			}
+		} catch (NoSuchElementException e) {
+			System.out.println("Shutting down...");
+		} finally {
+			try (
+					Socket socket = socketChannel.socket();
+					ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+					ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream())
+					) {
+				objectOutputStream.writeObject(new RequestPackage(
+						username,
+						password,
+						new Disconnect(),
+						null
+				));
+				objectOutputStream.flush();
+				objectInputStream.readObject();
+			} catch (IOException | ClassNotFoundException ignored) {
+			}
+		}
+	}
 
-        fillHashMaps();
+	private void login() {
+		RequestPackage requestPackage;
+		while (true) {
+			System.out.println("Enter 'log' if you want to login, 'reg' if you are a new user");
+			String inp = reader.nextLine().trim();
+			if (inp.equals("log")) {
+				System.out.println("Login: ");
+				username = reader.nextLine().trim();
+				System.out.println("Password: ");
+				password = new String(System.console().readPassword());
+				requestPackage = new RequestPackage(
+						username,
+						password,
+						new Login(),
+						null
+				);
+			} else if (inp.equals("reg")) {
+				System.out.println("Login: ");
+				username = reader.nextLine().trim();
+				System.out.println("Password: ");
+				password = new String(System.console().readPassword());
+				requestPackage = new RequestPackage(
+						username,
+						password,
+						new Register(),
+						new String[]{username, password}
+				);
+			} else continue;
+			try {
+				if (!send(requestPackage)) continue;
+				ResponsePackage responsePackage = receive();
+				process(responsePackage);
+				if (!responsePackage.errorsOccurred()) {
+					System.out.println("Successfully logged in");
+					return;
+				}
+			} catch (IOException | ClassNotFoundException e) {
+				System.err.println(e.getMessage());
+			}
 
-        while (true) {
-            if (fileCallsCount >= 100 || !reader.hasNext()) {
-                reader = new Scanner(System.in);
-                fileCallsCount = 0;
-            }
-            System.out.print("[" + username + "]=# ");
-            String[] input = reader.nextLine().trim().split(" ");
-            if (input.length == 0) continue;
-            if (input[0].equals("exit")) {
-                if (input.length != 1) {
-                    System.err.println("this command does not take any arguments");
-                    continue;
-                } else {
-                    System.exit(0);
-                }
-            }
-            if (input[0].equals("execute_script")) {
-                if (input.length != 2) {
-                    System.err.println("this command takes exactly one argument");
-                } else {
-                    reader = new Scanner(new FileReader(input[1]));
-                    fileCallsCount++;
-                }
-                continue;
-            }
-            RequestPackage<?> requestPackage;
-            socketChannel = SocketChannel.open(new InetSocketAddress(host, port));
-            try (Socket socket = socketChannel.socket()) {
-                requestPackage = processCommand(input);
-                ResponsePackage responsePackage = sendAndGetResponse(socket, requestPackage);
-                if (responsePackage == null) System.err.println("Failed to get response package");
-                else if (responsePackage.errorsOccurred()) System.err.println(responsePackage.message());
-                else System.out.println(responsePackage.message());
-            } catch (WrongNumberOfArgumentsException | NumberFormatException | NullFieldException |
-                     NoSuchCommandException e) {
-                System.err.println(e.getMessage());
-            }
-        }
+		}
+	}
 
-    }
+	private boolean send(RequestPackage requestPackage) throws IOException {
+		ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+		objectOutputStream.writeObject(requestPackage);
+		objectOutputStream.flush();
+		return true;
+	}
 
-    /**
-     * Retrieves the authorization package from the user input.
-     *
-     * @return the authorization package containing the login information
-     */
-    private RequestPackage<Boolean> getAuthorizationPackage() {
-        boolean isRegistered;
-        while (true) {
-            String temp = reader.nextLine().trim();
-            if (!temp.equals("log") && !temp.equals("reg")) continue;
-            isRegistered = temp.equals("log");
-            break;
-        }
-        while (true) {
-            System.out.println("login:");
-            username = reader.nextLine().trim();
-            if (username.isEmpty()) {
-                System.err.println("Username cannot be blank");
-            } else break;
-        }
-        while (true) {
+	private ResponsePackage receive() throws IOException, ClassNotFoundException {
+		ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+		return (ResponsePackage) objectInputStream.readObject();
+	}
 
-            System.out.println("password:");
-            password = new String(System.console().readPassword()).trim();
-            if (password.isEmpty()) {
-                System.err.println("Password cannot be blank");
-            } else break;
+	private boolean checkLocal(String[] input) {
+		if (input[0].equals("exit") && input.length == 1) System.exit(0);
+		if (input[0].equals("exit")) {
+			if (input.length == 2) {
+				try {
+					int code = Integer.parseInt(input[1]);
+					System.exit(code);
+				} catch (NumberFormatException e) {
+					System.err.println("Argument should be an integer");
+				}
+			} else System.err.println("This command takes 1 or 0 arguments");
+			return true;
+		}
+		if (input[0].equals("execute_script")) {
+			if (input.length == 2) {
+				try {
+					reader = new Scanner(new FileReader(input[1]));
+					fileCallsCount++;
+				} catch (FileNotFoundException e) {
+					System.err.println("No such file");
+				}
+			} else System.err.println("This command takes exactly one argument");
+			return true;
+		}
+		return false;
+	}
 
-        }
-        return new RequestPackage<>(
-                username,
-                password,
-                null,
-                null,
-                isRegistered
-        );
-    }
+	private void process(ResponsePackage responsePackage) {
+		if (responsePackage.errorsOccurred()) System.err.println(responsePackage.message());
+		else System.out.println(responsePackage.message());
+	}
 
-    /**
-     * Sends a request package and retrieves a response package.
-     *
-     * @param requestPackage the request package to be sent
-     * @return the response package received
-     */
-    private ResponsePackage sendAndGetResponse(Socket socket, RequestPackage<?> requestPackage) {
-        try (
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-                ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream())
-        ) {
-            objectOutputStream.writeObject(requestPackage);
-            objectOutputStream.flush();
-            return (ResponsePackage) objectInputStream.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            return null;
-        }
-    }
+	private boolean checkForMovie(String[] input) {
+		switch (input[0]) {
+			case "add", "add_if_max", "remove_lower" -> {
+				return true;
+			}
+			default -> {
+				return false;
+			}
+		}
+	}
 
-    private RequestPackage<?> processCommand(String[] input) throws WrongNumberOfArgumentsException, NullFieldException, NumberFormatException, NoSuchCommandException {
-        switch (input[0]) {
-            case "add", "add_if_max", "remove_lower" -> {
-                if (input.length == 1) return new RequestPackage<>(
-                        username,
-                        password,
-                        commandHashMap.get(input[0]),
-                        null,
-                        MovieGenerator.generateMovie(reader)
-                );
-                if (input.length == 2 || input.length == 3) return new RequestPackage<>(
-                        username,
-                        password,
-                        commandHashMap.get(input[0]),
-                        input[1].equals("-a") ? null : input[1].equals("-m") ? username : input.length == 3 && input[1].equals("-u") ? input[2] : null,
-                        MovieGenerator.generateMovie(reader)
-                );
-                else throw new WrongNumberOfArgumentsException();
-            }
-            case "help", "info", "print_field_ascending_operator", "show" -> {
-                if (input.length == 1) return new RequestPackage<>(
-                        username,
-                        password,
-                        commandHashMap.get(input[0]),
-                        "-a",
-                        null
-                );
-                else throw new WrongNumberOfArgumentsException();
-            }
-            case "remove_all_by_oscars_count", "remove_by_id" -> {
-                if (input.length == 2) return new RequestPackage<>(
-                        username,
-                        password,
-                        commandHashMap.get(input[0]),
-                        input[1],
-                        LongParser.parse(input[1])
-                );
-                else throw new WrongNumberOfArgumentsException();
-            }
-            case "clear", "remove_head" -> {
-                if (input.length == 1) return new RequestPackage<>(
-                        username,
-                        password,
-                        commandHashMap.get(input[0]),
-                        "-m",
-                        null
-                );
-                if (input.length == 2 && (input[1].equals("-a") || input[1].equals("-m"))) return new RequestPackage<>(
-                        username,
-                        password,
-                        commandHashMap.get(input[0]),
-                        input[1],
-                        null
-                );
-                if (input.length == 3 && (input[1].equals("-a") || input[1].equals("-m"))) return new RequestPackage<>(
-                        username,
-                        password,
-                        commandHashMap.get(input[0]),
-                        input[1] + " " + input[2],
-                        null
-                );
-                throw new WrongNumberOfArgumentsException();
-            }
-            default -> {
-                throw new NoSuchCommandException();
-            }
-        }
-    }
+	private RequestPackage generateRequest(String[] input, ClientCommand command) {
+		Object o;
+		if (checkForMovie(input)) {
+			o = MovieGenerator.generateMovie(reader);
+		} else {
+			if (input.length == 1) o = null;
+			else {
+				StringBuilder sb = new StringBuilder();
+				for (int i = 1; i < input.length; i++) {
+					sb.append(input[i]).append(' ');
+				}
+				o = sb.toString().trim();
+			}
+		}
+		return new RequestPackage(
+				username,
+				password,
+				command,
+				o
+		);
+	}
 
-    private ResponsePackage authorize(RequestPackage<?> authorizationPackage, Socket socket) {
-        try (
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-                ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream())
-        ) {
-            objectOutputStream.writeObject(authorizationPackage);
-            objectOutputStream.flush();
-            return (ResponsePackage) objectInputStream.readObject();
-        } catch (ClassNotFoundException | IOException e) {
-            return new ResponsePackage(
-                    true,
-                    e.getMessage(),
-                    null
-            );
-        }
-    }
-
-    /**
-     * Initializes the hash maps for movie commands and general commands.
-     * Populates the movieCommandHashMap with instances of Add, AddIfMax, RemoveLower, and Update.
-     * Populates the commandHashMap with instances of Clear, Help, Info, MaxByMpaaRating, PrintFieldAscendingOperator, RemoveHead, Show, RemoveAllByOscarsCount, and RemoveById.
-     */
-    private void fillHashMaps() {
-        movieCommandHashMap.put("add", new Add());
-        movieCommandHashMap.put("add_if_max", new AddIfMax());
-        movieCommandHashMap.put("remove_lower", new RemoveLower());
-        movieCommandHashMap.put("update", new Update());
-
-        commandHashMap.put("clear", new Clear()); // todo varargs!!
-        commandHashMap.put("help", new Help(commandHashMap, movieCommandHashMap));
-        commandHashMap.put("info", new Info());
-        commandHashMap.put("max_by_mpaa_rating", new MaxByMpaaRating());
-        commandHashMap.put("print_field_ascending_operator", new PrintFieldAscendingOperator());
-        commandHashMap.put("remove_head", new RemoveHead()); // todo varargs!!
-        commandHashMap.put("show", new Show());
-
-        commandHashMap.put("remove_all_by_oscars_count", new RemoveAllByOscarsCount());
-        commandHashMap.put("remove_by_id", new RemoveById());
-    }
+	private void fillHashMap() {
+		clientCommandHashMap.put("add", new Add(null));
+		clientCommandHashMap.put("add_if_max", new AddIfMax(null));
+		clientCommandHashMap.put("clear", new Clear(null));
+		clientCommandHashMap.put("help", new Help(clientCommandHashMap));
+		clientCommandHashMap.put("info", new Info());
+		clientCommandHashMap.put("max_by_mpaa_rating", new MaxByMpaaRating(null));
+		clientCommandHashMap.put("print_field_ascending_operator", new PrintFieldAscendingOperator(null));
+		clientCommandHashMap.put("remove_all_by_oscars_count", new RemoveAllByOscarsCount(null));
+		clientCommandHashMap.put("remove_by_id", new RemoveById(null));
+		clientCommandHashMap.put("remove_head", new RemoveHead(null));
+		clientCommandHashMap.put("remove_lower", new RemoveLower(null));
+		clientCommandHashMap.put("show", new Show(null));
+		clientCommandHashMap.put("update", new Update(null));
+	}
 }

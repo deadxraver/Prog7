@@ -1,19 +1,12 @@
 package clientlogic;
 
-import exceptions.WrongNumberOfArgumentsException;
-
-import java.io.IOException;
-
 public class ClientMain {
     public static void main(String... args) {
         try {
-            new ClientProgram(args).run();
-        } catch (WrongNumberOfArgumentsException | NumberFormatException e) {
+            new ClientProgram().run();
+        } catch (NumberFormatException e) {
             System.err.println(e.getMessage());
             System.err.print("Try: ");
-            System.out.println("java -jar client.jar [ {port} | {host} {port} ]");
-        } catch (IOException e) {
-            System.err.println("Cannot establish connection. Make sure you entered host and port correctly");
             System.out.println("java -jar client.jar [ {port} | {host} {port} ]");
         }
     }

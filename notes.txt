@@ -1,0 +1,3 @@
+- db manipulation
+- hash passwords
+- add salt

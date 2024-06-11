@@ -47,7 +47,11 @@ public class Movie implements Comparable<Movie>, Serializable {
     private MovieGenre genre; //Поле не может быть null
     private MpaaRating mpaaRating; //Поле может быть null
     private Person operator; //Поле может быть null
-    private User owner; // todo
+    private User owner;
+
+    public void setOwner(User owner) {
+        this.owner = owner;
+    }
 
     public long getId() {
         return id;

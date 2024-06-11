@@ -1,46 +1,35 @@
+├───annotations
+│       MainMethod.java
+│
 ├───clientlogic
 │       ClientMain.java
-│       Program.java
+│       ClientProgram.java
 │
 ├───commands
 │   │   Command.java
+│   │   MovieGenerator.java
 │   │
-│   ├───localcommands
-│   │       ExecuteScript.java
-│   │       Exit.java
-│   │       LocalCommand.java
-│   │       MovieGenerator.java
-│   │
-│   ├───movie
+│   ├───client
 │   │       Add.java
 │   │       AddIfMax.java
-│   │       ComesWithAMovie.java
-│   │       RemoveLower.java
-│   │       Update.java
-│   │
-│   ├───nomovie
 │   │       Clear.java
+│   │       ClientCommand.java
 │   │       Help.java
 │   │       Info.java
 │   │       MaxByMpaaRating.java
-│   │       NoMovieCommand.java
 │   │       PrintFieldAscendingOperator.java
 │   │       RemoveAllByOscarsCount.java
 │   │       RemoveById.java
 │   │       RemoveHead.java
+│   │       RemoveLower.java
 │   │       Show.java
+│   │       Update.java
 │   │
-│   └───servercommands
-│           Exit.java
-│           Grant.java
-│           Help.java
+│   └───server
 │           ServerCommand.java
 │
-├───databasepack
-│       User.java
-│
 ├───datapacks
-│       AuthorizationPackage.java
+│       DataPack.java
 │       RequestPackage.java
 │       ResponsePackage.java
 │
@@ -53,8 +42,10 @@
 │       MovieGenre.java
 │       MpaaRating.java
 │       Person.java
+│       User.java
 │
 ├───exceptions
+│       AccessException.java
 │       AuthorizationException.java
 │       DateIsNotReachedException.java
 │       EmptyCollectionException.java
@@ -69,10 +60,14 @@
 │       NullFieldException.java
 │       NumberOutOfBoundsException.java
 │       ParseException.java
+│       PasswordException.java
+│       SecurityException.java
+│       UserAlreadyExistsException.java
 │       ValidationException.java
 │       WrongNumberOfArgumentsException.java
 │
 ├───parsers
+│       ArgsParser.java
 │       ColorParser.java
 │       CountryParser.java
 │       DateTimeParser.java
@@ -86,5 +81,8 @@
 │       StringParser.java
 │
 └───serverlogic
-        Program.java
+        DBManipulation.java
+        PasswordHandler.java
+        ServerConsole.java
         ServerMain.java
+        ServerProgram.java

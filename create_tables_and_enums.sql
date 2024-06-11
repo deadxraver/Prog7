@@ -5,10 +5,12 @@ CREATE TYPE MPAA_RATING AS ENUM ('PG', 'R', 'NC_17');
 
 CREATE TABLE IF NOT EXISTS USERS
 (
-    id        SERIAL PRIMARY KEY,
-    username  TEXT    NOT NULL,
-    password  TEXT    NOT NULL,
-    superuser BOOLEAN NOT NULL DEFAULT FALSE
+    id                SERIAL PRIMARY KEY,
+    username          TEXT    NOT NULL,
+    password          TEXT    NOT NULL,
+    salt              TEXT    NOT NULL,
+    superuser         BOOLEAN NOT NULL DEFAULT FALSE,
+    registration_date TIMESTAMP        DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS MOVIE
@@ -17,7 +19,7 @@ CREATE TABLE IF NOT EXISTS MOVIE
     user_id       INTEGER,
     FOREIGN KEY (user_id) REFERENCES USERS (id),
     name          TEXT             NOT NULL,
-    creation_date date             NOT NULL DEFAULT now(),
+    creation_date TIMESTAMP        NOT NULL DEFAULT now(),
     oscars_count  INTEGER          NOT NULL CHECK ( oscars_count > 0 ),
     genre         MOVIE_GENRE      NOT NULL,
     mpaa_rating   MPAA_RATING,
@@ -30,7 +32,7 @@ CREATE TABLE IF NOT EXISTS PERSON
     movie_id    INTEGER UNIQUE,
     FOREIGN KEY (movie_id) REFERENCES MOVIE (id),
     name        TEXT NOT NULL,
-    birthday    date,
+    birthday    TIMESTAMP,
     hair_color  COLOR,
     nationality COUNTRY
 );

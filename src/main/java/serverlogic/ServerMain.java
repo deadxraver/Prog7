@@ -1,18 +1,13 @@
 package serverlogic;
 
-import exceptions.NullFieldException;
-import exceptions.NumberOutOfBoundsException;
-import exceptions.WrongNumberOfArgumentsException;
-import multithread.TaskHandler;
-
-import java.sql.SQLException;
-
 public class ServerMain {
-    public static void main(String... args) throws NumberOutOfBoundsException, WrongNumberOfArgumentsException, NullFieldException, SQLException {
+    public static void main(String... args) {
         try {
             Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException ignored) {}
-//        ServerProgram.startServer();
-        new ServerProgram(1).run();
+        } catch (ClassNotFoundException e) {
+            System.err.println("No suitable driver found");
+            System.exit(1);
+        }
+        new ServerProgram().run();
     }
 }

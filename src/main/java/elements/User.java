@@ -4,11 +4,13 @@ import java.util.Objects;
 
 public class User {
     public User(
+            long id,
             String username,
             String password
     ) {
         this.username = username;
         this.password = password;
+        this.id = id;
     }
     private long id;
     private final String username;
