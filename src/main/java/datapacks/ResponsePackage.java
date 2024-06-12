@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 public record ResponsePackage(
         boolean errorsOccurred,
-        String message,
+        Object response,
         Movie movie
 ) implements DataPack, Serializable {
     @Serial

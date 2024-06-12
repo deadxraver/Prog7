@@ -79,9 +79,7 @@ public class ClientProgram {
 				}
 				if (responsePackage.movie() != null) {
 					Movie movie = MovieGenerator.generateMovie(responsePackage.movie(), reader);
-					try (
-							Socket socket = socketChannel.socket()
-							) {
+					try {
 						if (!send(new RequestPackage(
 								username,
 								password,
@@ -202,8 +200,8 @@ public class ClientProgram {
 	}
 
 	private void process(ResponsePackage responsePackage) {
-		if (responsePackage.errorsOccurred()) System.err.println(responsePackage.message());
-		else System.out.println(responsePackage.message());
+		if (responsePackage.errorsOccurred()) System.err.println(responsePackage.response());
+		else System.out.println(responsePackage.response());
 	}
 
 	private boolean checkForMovie(String[] input) {

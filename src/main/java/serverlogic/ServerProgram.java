@@ -42,12 +42,10 @@ public class ServerProgram {
 				if (socketChannel == null) continue;
 				logger.info("client found");
 				ClientHandler clientHandler = new ClientHandler(socketChannel);
-				Thread t = new Thread(clientHandler::run);
+				Thread t = new Thread(clientHandler);
 				forkJoinPool.submit(t);
-				Thread.sleep(200);
-			} catch (IOException | InterruptedException ignored) {
+			} catch (IOException ignored) {
 			}
-
 		}
 	}
 

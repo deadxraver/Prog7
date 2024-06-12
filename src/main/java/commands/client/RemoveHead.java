@@ -1,6 +1,7 @@
 package commands.client;
 
 import datapacks.ResponsePackage;
+import elements.Movie;
 import elements.MovieCollection;
 import elements.User;
 import exceptions.AccessException;
@@ -8,6 +9,8 @@ import exceptions.EmptyCollectionException;
 import exceptions.ParseException;
 import parsers.ArgsParser;
 import serverlogic.DBManipulation;
+
+import java.util.Arrays;
 
 public class RemoveHead implements ClientCommand {
 	private static MovieCollection movieCollection;
@@ -21,13 +24,25 @@ public class RemoveHead implements ClientCommand {
 		User user = DBManipulation.getUser(username, password);
 		try {
 			User applyFor = ArgsParser.parse(user, (String) args);
-			movieCollection.removeMovie(movieCollection.getMax(), applyFor);
+			Object[] movies = movieCollection.getCollection();
+			Arrays.sort(movies);
+			for (int i = movies.length - 1; i >= 0; i--) {
+				Movie movie = (Movie) movies[i];
+				if (applyFor == null || movie.belongsTo(applyFor)) {
+					movieCollection.removeMovie(movie, applyFor);
+					return new ResponsePackage(
+							false,
+							"movie successfully removed",
+							null
+					);
+				}
+			}
 			return new ResponsePackage(
-					false,
-					"movie successfully removed",
+					true,
+					"No suitable movies found",
 					null
 			);
-		} catch (EmptyCollectionException | AccessException e) {
+		} catch (AccessException e) {
 			return new ResponsePackage(
 					true,
 					e.getMessage(),

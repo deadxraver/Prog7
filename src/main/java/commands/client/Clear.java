@@ -8,6 +8,8 @@ import exceptions.ParseException;
 import parsers.ArgsParser;
 import serverlogic.DBManipulation;
 
+import java.sql.SQLException;
+
 public class Clear implements ClientCommand {
 	private static MovieCollection movieCollection;
 
@@ -21,7 +23,7 @@ public class Clear implements ClientCommand {
 		try {
 			String flagsAndAll = (String) args;
 			User applyFor = ArgsParser.parse(user, flagsAndAll);
-			movieCollection.clear(user);
+			movieCollection.clear(applyFor);
 			return new ResponsePackage(
 					false,
 					"collection for user" + (applyFor == null ? "s " : (" " + applyFor.getUsername() + " ")) + "successfully cleared",
@@ -33,7 +35,7 @@ public class Clear implements ClientCommand {
 					"Failed to cast arguments",
 					null
 			);
-		} catch (AccessException | ParseException e) {
+		} catch (AccessException | ParseException | SQLException e) {
 			return new ResponsePackage(
 					true,
 					e.getMessage(),

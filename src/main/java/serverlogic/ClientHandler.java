@@ -12,21 +12,17 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.channels.SocketChannel;
 
-public class ClientHandler  {
+public class ClientHandler implements Runnable {
 	private final SocketChannel socketChannel;
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
+	private int ioCounter = 0;
 
 	public ClientHandler(SocketChannel socketChannel) {
 		this.socketChannel = socketChannel;
-//		try {
-//			socketChannel.configureBlocking(false);
-//		} catch (IOException ignored) {
-//			logger.error("could not configure non-blocking");
-//		}
 		logger.info("new client");
 	}
 
-
+	@Override
 	public void run() {
 		logger.info("started execution in thread #{}", Thread.currentThread());
 		Socket socket = socketChannel.socket();
@@ -40,6 +36,11 @@ public class ClientHandler  {
 				return;
 			} catch (IOException | ClassCastException | ClassNotFoundException e) {
 				logger.error(e.getMessage());
+				ioCounter++;
+				if (ioCounter > 100) {
+					logger.error("something is wrong, the client will be disconnected");
+					return;
+				}
 			}
 		}
 	}

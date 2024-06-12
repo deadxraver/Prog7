@@ -6,7 +6,7 @@ CREATE TYPE MPAA_RATING AS ENUM ('PG', 'R', 'NC_17');
 CREATE TABLE IF NOT EXISTS USERS
 (
     id                SERIAL PRIMARY KEY,
-    username          TEXT    NOT NULL,
+    username          TEXT    NOT NULL UNIQUE,
     password          TEXT    NOT NULL,
     salt              TEXT    NOT NULL,
     superuser         BOOLEAN NOT NULL DEFAULT FALSE,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS MOVIE
 CREATE TABLE IF NOT EXISTS PERSON
 (
     movie_id    INTEGER UNIQUE,
-    FOREIGN KEY (movie_id) REFERENCES MOVIE (id),
+    FOREIGN KEY (movie_id) REFERENCES MOVIE (id) ON DELETE CASCADE,
     name        TEXT NOT NULL,
     birthday    TIMESTAMP,
     hair_color  COLOR,

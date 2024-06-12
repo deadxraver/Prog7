@@ -134,7 +134,8 @@ public class Movie implements Comparable<Movie>, Serializable {
                 "\nNumber of oscars: " + oscarsCount +
                 "\nGenre: " + genre +
                 "\nMPAA rating: " + (mpaaRating == null ? "no info" : mpaaRating) +
-                "\nOperator: " + (operator == null ? "no info" : operator);
+                "\nOperator: " + (operator == null ? "no info" : operator) +
+                "\nOwner: " + owner.getUsername();
     }
 
     @Override

@@ -5,7 +5,6 @@ import exceptions.*;
 import parsers.*;
 
 import java.lang.reflect.Field;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Scanner;
@@ -33,7 +32,7 @@ public class MovieGenerator {
 				movie == null ? 0 : movie.getId(),
 				getName(),
 				getCoordinates(),
-				LocalDate.now(),
+				movie == null ? null : movie.getCreationDate(),
 				getOscarsCount(),
 				getGenre(),
 				getMpaaRating(),

@@ -20,7 +20,6 @@ public class AddIfMax implements ClientCommand {
 	@Override
 	public ResponsePackage run(String username, String password, Object args) {
 		Movie movie;
-		User user = DBManipulation.getUser(username, password);
 		try {
 			movie = (Movie) args;
 		} catch (ClassCastException e) {
@@ -39,7 +38,7 @@ public class AddIfMax implements ClientCommand {
 			);
 		} catch (EmptyCollectionException ignored) {}
 		try {
-			movieCollection.addMovie(user, movie);
+			movieCollection.addMovie(DBManipulation.getUser(username, password), movie);
 			return new ResponsePackage(
 					false,
 					"Movie successfully added",

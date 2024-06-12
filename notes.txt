@@ -1,3 +1,5 @@
-- db manipulation
-- hash passwords
-- add salt
+- update creates an infinite loop       + fixed
+- remove_head only for owned            + fixed
+- clear does not affect DB (why?)       + fixed
+- remove_by_id -//-                     + fixed
+- User class keeps hashed password!!!   + fixed

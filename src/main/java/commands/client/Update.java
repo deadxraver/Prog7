@@ -10,7 +10,6 @@ import exceptions.NullFieldException;
 import parsers.LongParser;
 import serverlogic.DBManipulation;
 
-import java.sql.SQLException;
 
 public class Update implements ClientCommand {
 	private static MovieCollection movieCollection;
@@ -21,11 +20,9 @@ public class Update implements ClientCommand {
 
 	@Override
 	public ResponsePackage run(String username, String password, Object args) {
-		User user = DBManipulation.getUser(username, password);
 		try {
 			Movie movie = (Movie) args;
-			movieCollection.removeMovie(movie.getId(), user);
-			movieCollection.addMovie(user, movie);
+			movieCollection.replace(movie.getId(), movie, DBManipulation.getUser(username, password));
 			return new ResponsePackage(
 					false,
 					"Movie successfully updated",
@@ -34,7 +31,7 @@ public class Update implements ClientCommand {
 		} catch (ClassCastException e) {
 			try {
 				long id = LongParser.parse((String) args);
-				Movie movie = movieCollection.getElement(id, user);
+				Movie movie = movieCollection.getElement(id, DBManipulation.getUser(username, password));
 				return new ResponsePackage(
 						false,
 						"",
@@ -53,18 +50,6 @@ public class Update implements ClientCommand {
 						null
 				);
 			}
-		} catch (AccessException | NoSuchMovieException e) {
-			return new ResponsePackage(
-					true,
-					e.getMessage(),
-					null
-			);
-		} catch (SQLException e) {
-			return new ResponsePackage(
-					true,
-					"Could not replace movie",
-					null
-			);
 		}
 	}
 

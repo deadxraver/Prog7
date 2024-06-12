@@ -5,21 +5,19 @@ import exceptions.EmptyCollectionException;
 import exceptions.NoSuchMovieException;
 import serverlogic.DBManipulation;
 
+import java.io.Serializable;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class MovieCollection {
-	public MovieCollection(LocalDate creationDate, Movie... movies) {
-		this.creationDate = creationDate;
+public class MovieCollection implements Serializable {
+	public MovieCollection(Movie... movies) {
 		collection = new CopyOnWriteArrayList<>();
 		collection.addAll(Arrays.asList(movies));
 	}
 
-	private final LocalDate creationDate;
 	private final CopyOnWriteArrayList<Movie> collection;
 
 	public Movie getElement(long id) throws NoSuchMovieException {
@@ -29,10 +27,21 @@ public class MovieCollection {
 		throw new NoSuchMovieException();
 	}
 
+	public void replace(long id, Movie newMovie, User user) {
+		if (DBManipulation.replaceMovie(id, newMovie, user)){
+			for (Movie movie : collection) {
+				if (movie.getId() == id) {
+					collection.set(collection.indexOf(movie), newMovie);
+					return;
+				}
+			}
+		}
+	}
+
 	public Movie getElement(long id, User user) throws NoSuchMovieException, AccessException {
 		for (Movie movie : collection) {
 			if (movie.getId() == id) {
-				if (!movie.belongsTo(user)) throw new AccessException();
+				if (!movie.belongsTo(user) && !user.isSuperuser()) throw new AccessException();
 				return movie;
 			}
 		}
@@ -54,10 +63,6 @@ public class MovieCollection {
 		return n;
 	}
 
-	public LocalDate getCreationDate() {
-		return this.creationDate;
-	}
-
 	public String getCollectionType() {
 		return Movie.class.getSimpleName();
 	}
@@ -67,11 +72,18 @@ public class MovieCollection {
 		else throw new SQLException();
 	}
 
+	public void addMovie(Movie movie) {
+		collection.add(movie);
+	}
+
 	public void removeMovie(long id, User user) throws NoSuchMovieException, AccessException {
 		for (Movie movie : collection) {
 			if (movie.getId() == id) {
-				if (movie.belongsTo(user)) collection.remove(movie);
-				else throw new AccessException();
+				if (!movie.belongsTo(user) && !user.isSuperuser()) throw new AccessException();
+				else {
+					collection.remove(movie);
+					DBManipulation.deleteMovie(user, movie);
+				}
 				return;
 			}
 		}
@@ -79,15 +91,18 @@ public class MovieCollection {
 	}
 
 	public void removeMovie(Movie movie, User user) throws AccessException {
-		if (movie.belongsTo(user)) collection.remove(movie);
+		if (movie.belongsTo(user)) {
+			collection.remove(movie);
+		}
 		else throw new AccessException();
 	}
 
-	public void clear() {
-		collection.clear();
+	public void clear() throws SQLException {
+		if (DBManipulation.truncate()) collection.clear();
+		else throw new SQLException();
 	}
 
-	public void clear(User user) {
+	public void clear(User user) throws SQLException {
 		if (user == null) {
 			clear();
 		} else {
@@ -134,7 +149,10 @@ public class MovieCollection {
 		boolean found = false;
 		for (Movie movie : collection) {
 			if (movie.getOscarsCount() == number && movie.belongsTo(user)) {
-				collection.remove(movie);
+				try {
+					this.removeMovie(movie, user);
+				} catch (AccessException ignored) {
+				}
 				found = true;
 			}
 		}

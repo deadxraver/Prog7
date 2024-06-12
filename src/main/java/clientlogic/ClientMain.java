@@ -1,5 +1,7 @@
 package clientlogic;
 
+import elements.MpaaRating;
+
 public class ClientMain {
     public static void main(String... args) {
         try {

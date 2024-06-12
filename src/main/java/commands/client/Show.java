@@ -15,7 +15,7 @@ public class Show implements ClientCommand {
 	public ResponsePackage run(String username, String password, Object args) {
 		return new ResponsePackage(
 				false,
-				movieCollection.toString(),
+				movieCollection,
 				null
 				);
 	}

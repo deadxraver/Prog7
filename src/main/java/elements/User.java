@@ -1,20 +1,23 @@
 package elements;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class User {
+public class User implements Serializable {
     public User(
             long id,
             String username,
-            String password
+            String hashedPassword,
+            boolean superuser
     ) {
         this.username = username;
-        this.password = password;
+        this.hashedPassword = hashedPassword;
         this.id = id;
+        this.superuser = superuser;
     }
     private long id;
     private final String username;
-    private final String password;
+    private final String hashedPassword;
     private boolean superuser;
 
     public long getId() {
@@ -29,8 +32,8 @@ public class User {
         return username;
     }
 
-    public String getPassword() {
-        return password;
+    public String getHashedPassword() {
+        return hashedPassword;
     }
 
     public boolean isSuperuser() {
@@ -46,12 +49,12 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return id == user.id && superuser == user.superuser && Objects.equals(username, user.username) && Objects.equals(password, user.password);
+        return id == user.id && superuser == user.superuser && Objects.equals(username, user.username) && Objects.equals(hashedPassword, user.hashedPassword);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, username, password, superuser);
+        return Objects.hash(id, username, hashedPassword, superuser);
     }
 
     @Override
